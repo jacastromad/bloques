@@ -53,23 +53,22 @@ renderPiece a b p = Pictures [drawCell a b c bc | c <- cellsOf p]
 
 -- | Render next piece on the right of the board
 renderNext :: Assets -> Board -> Piece -> Picture
-renderNext Assets{cellSize=s, glossColor=gc} (Board w h _) (Piece sh _ r c) =
-  Pictures (Translate cx cy (Color black (rectangleSolid boxW boxH)):blocks)
-  where cw     = fromIntegral w * s
-        ch     = fromIntegral h * s
-        margin = s * 1.0
-        ax     = cw/2 + margin + s*2    -- cell (0,0) center X
-        ay     = ch/2 - s*6             -- cell (0,0) center Y
-        -- background rectangle (covers a 4x3 preview with padding)
-        pad    = s * 0.5
-        boxW   = 4*s + 2*pad
-        boxH   = 3*s + 2*pad
-        cx     = ax + 1.5*s             -- center of 4x3 box
-        cy     = ay - 1*s
-        offs   = shapeCells sh r
-        blocks = [ Translate (ax + fromIntegral dx*s) (ay - fromIntegral dy*s)
-                   $ Color (gc c) $ rectangleSolid s s
-                 | (dx,dy) <- offs ]
+renderNext a@(Assets{cellSize=s}) b@(Board w h _) (Piece sh _ r _) =
+  Pictures
+    [ Translate cx cy $ Color black $ rectangleSolid boxW boxH
+    , Translate dx dy $  -- because drawCell uses board coords
+        Pictures [ drawCell a b (x, y) (colorOf sh)
+                 | (x, y) <- shapeCells sh r ] ]
+  where
+    -- board geometry
+    (cw, ch) = (fromIntegral w * s, fromIntegral h * s)
+    (x0, y0) = toScreen s b (0, 0)       -- world coords of board cell (0,0)
+    -- preview geometry
+    (ax, ay) = (cw/2 + s*3, ch/2 - s*6)  -- world coords for preview cell (0,0)
+    pad      = s * 0.5
+    (boxW, boxH) = (4*s + 2*pad, 3*s + 2*pad)
+    (cx, cy) = (ax + 1.5*s, ay - 1*s)   -- background rect center
+    (dx, dy) = (ax - x0, ay - y0)       -- delta from board to preview
 
 -- | Render HUD (score, level, cleared) on the left
 renderHUD :: Assets -> Board -> Int -> Int -> Int -> Picture
@@ -96,7 +95,7 @@ renderBg Assets{background = b} = case b of
 drawCell :: Assets -> Board -> Pos -> BColor -> Picture
 drawCell Assets{ cellSize = s, glossColor = gc } b p bc =
   Translate sx sy $ Pictures
-    [ Color border $ rectangleSolid s (s)
+    [ Color border $ rectangleSolid s s
     , Color base $ rectangleSolid (s*0.8) (s*0.8) ]
   where (sx, sy) = toScreen s b p
         base     = gc bc
