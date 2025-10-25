@@ -9,6 +9,7 @@ import Game.Render (render)
 import Game.Logic (step, spawn, nextShape)
 import Game.Events (handle)
 import System.Random (randomIO)
+import qualified Data.Map.Strict as M
 
 
 -- | Launch the game
@@ -23,8 +24,9 @@ main = do
       p0        = spawn shA brd      -- current piece
       (shB, s2) = nextShape s1
       n0        = spawn shB brd      -- next piece
-      w0 = World { state = Running, board = brd, piece = p0, fallAcc = 0.5
-                 , next = n0, score = 0, level = 1, cleared = 0, seed = s2 }
+      w0 = World { state = Running, keys = M.empty, board = brd, piece = p0
+                 , fallAcc = 0.5, next = n0, score = 0, level = 1, cleared = 0
+                 , seed = s2 }
       win   = InWindow "Bloques" (winW assets brd, winH assets brd) (100,100)
       fps   = 60
   play win black fps w0 (render assets) handle step

@@ -7,6 +7,7 @@ module Game.Logic
   , hardD
   , rotL
   , rotR
+  , togglePause
   , nextShape  --TODO: remove (used in main to setup world)
   , spawn      --TODO: remove this one too
   ) where
@@ -16,17 +17,67 @@ import Game.Shapes
 import qualified Data.Vector as V
 import Data.Word (Word64)
 import Data.Bits (xor, shiftR, shiftL)
+import qualified Data.Map.Strict as M
+import qualified Graphics.Gloss.Interface.Pure.Game as G
 
 
 -- | Single simulation step.
 step :: Float -> World -> World
 step _ w@World{ state = Over } = w
-step i w@World{ board = b, piece = p, level = l, fallAcc = s, state = st }
-  | st /= Running = w
+step _ w@World{ state = Paused } = w
+step i w = stepG i (stepK i w)
+
+-- | Handle keys.
+stepK :: Float -> World -> World
+stepK i w@World{ keys = ks } = w' { keys = ks'' }
+  where
+    ks' = M.map (subtract i) ks
+    (w', ks'') = M.foldlWithKey' f (w, M.empty) ks'
+    f (wAcc, mAcc) k t = let (wOut, t') = fire k t wAcc
+                         in (wOut, M.insert k t' mAcc)
+
+-- | Handle gravity.
+stepG :: Float -> World -> World
+stepG i w@World{ board = b, piece = p, level = l, fallAcc = s }
   | s-i > 0 = w{fallAcc = s-i}
   | canPlace b (translate (0, 1) p) = w{piece = translate (0, 1) p
                                        , fallAcc = 0.5-(0.05*fromIntegral l)}
   | otherwise = lockAndAdvance w
+
+-- | Launch action when key timer reaches 0
+fire :: G.Key -> Float -> World -> (World, Float)
+fire (G.SpecialKey G.KeyLeft) t w
+  | t <= 0    = (moveL w, 0.01)
+  | otherwise = (w, t)
+fire (G.SpecialKey G.KeyRight) t w
+  | t <= 0    = (moveR w, 0.01)
+  | otherwise = (w, t)
+fire (G.SpecialKey G.KeyDown) t w
+  | t <= 0    = (softD w, 0.01)
+  | otherwise = (w, t)
+fire (G.SpecialKey G.KeyUp) t w
+  | t <= 0    = (rotL w, 0.15)
+  | otherwise = (w, t)
+fire (G.SpecialKey G.KeySpace) t w
+  | t <= 0    = (hardD w, 0.15)
+  | otherwise = (w, t)
+fire (G.Char 'z') t w
+  | t <= 0    = (rotL w, 0.15)
+  | otherwise = (w, t)
+fire (G.Char 'x') t w
+  | t <= 0    = (rotR w, 0.15)
+  | otherwise = (w, t)
+fire (G.Char 'p') t w
+  | t <= 0    = (togglePause w, 0.15)
+  | otherwise = (w, t)
+fire _ t w = (w, t)
+
+-- Toggle between Running and Paused.
+togglePause :: World -> World
+togglePause w = case state w of
+  Running -> w{ state = Paused }
+  Paused  -> w{ state = Running }
+  Over    -> w
 
 -- Move left
 moveL :: World -> World

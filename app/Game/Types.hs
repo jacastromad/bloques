@@ -2,6 +2,8 @@
 module Game.Types where
 
 import qualified Data.Vector as V
+import qualified Data.Map.Strict as M
+import qualified Graphics.Gloss.Interface.Pure.Game as G
 import Data.Maybe (isJust)
 
 
@@ -33,6 +35,7 @@ data GameStatus = Running | Paused | Over deriving (Eq, Show)
 
 -- | Full game state with current piece, next piece and scores.
 data World = World { state :: GameStatus  -- Running, Paused or Over
+                   , keys :: M.Map G.Key Float
                    , board :: Board       -- board and fixed blocks
                    , piece :: Piece       -- current falling piece
                    , next :: Piece        -- next piece
