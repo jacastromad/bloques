@@ -7,7 +7,6 @@ module Game.Logic
   , hardD
   , rotL
   , rotR
-  , togglePause
   , nextShape  --TODO: remove (used in main to setup world)
   , spawn      --TODO: remove this one too
   ) where
@@ -67,17 +66,7 @@ fire (G.Char 'z') t w
 fire (G.Char 'x') t w
   | t <= 0    = (rotR w, 0.15)
   | otherwise = (w, t)
-fire (G.Char 'p') t w
-  | t <= 0    = (togglePause w, 0.15)
-  | otherwise = (w, t)
 fire _ t w = (w, t)
-
--- Toggle between Running and Paused.
-togglePause :: World -> World
-togglePause w = case state w of
-  Running -> w{ state = Paused }
-  Paused  -> w{ state = Running }
-  Over    -> w
 
 -- Move left
 moveL :: World -> World

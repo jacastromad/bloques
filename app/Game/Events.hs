@@ -13,6 +13,8 @@ import qualified Data.Map.Strict as M
 -- | Handle a single Gloss 'Event'.
 --   Arrows: move/soft drop.  Z/X or Up: rotate.  Space: hard drop.  P: pause toggle.
 handle :: Event -> World -> World
+handle (EventKey (Char 'p') Down _ _) w
+  | state w /= Over = togglePause w
 handle ev w@World { keys = ks, state = Running } =
   case ev of
     EventKey (SpecialKey KeyLeft)  Down _ _ -> moveL w { keys = M.insert (SpecialKey KeyLeft) 0.15 ks }
@@ -29,8 +31,13 @@ handle ev w@World { keys = ks, state = Running } =
     EventKey (Char 'z')            Up   _ _ -> w { keys = M.delete (Char 'z') ks }
     EventKey (Char 'x')            Down _ _ -> rotR w { keys = M.insert (Char 'x') 0.15 ks }
     EventKey (Char 'x')            Up   _ _ -> w { keys = M.delete (Char 'x') ks }
-    EventKey (Char 'p')            Down _ _ -> togglePause w { keys = M.insert (Char 'p') 0.15 ks }
-    EventKey (Char 'p')            Up   _ _ -> w { keys = M.delete (Char 'p') ks }
     _                                       -> w
 handle _ w = w
+
+-- Toggle between Running and Paused.
+togglePause :: World -> World
+togglePause w = case state w of
+  Running -> w{ state = Paused }
+  Paused  -> w{ state = Running }
+  Over    -> w
 
